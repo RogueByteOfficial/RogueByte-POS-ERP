@@ -1,7 +1,13 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "roguebyte-pos-erp",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Fares Sid Ahmed (RogueByte)",
+  "homepage": "https://roguebyte.online/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RogueByteOfficial/RogueByte-POS-ERP.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",

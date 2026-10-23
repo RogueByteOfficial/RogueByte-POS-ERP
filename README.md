@@ -1,28 +1,34 @@
 # RogueByte POS & ERP
 ### Complete Multi-Branch Point of Sale, Double-Entry Accounting, Inventory Ledger & Business Management System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-emerald)]()
 [![Precision](https://img.shields.io/badge/Currency-OMR%20(3%20Decimals)-amber)]()
 [![Accounting](https://img.shields.io/badge/Engine-Perpetual%20Double--Entry-blue)]()
 [![Tax](https://img.shields.io/badge/VAT-Oman%205%25%20Standard-purple)]()
-[![Website](https://img.shields.io/badge/Website-roguebyte.online-059669)](https://roguebyte.online)
+[![Website](https://img.shields.io/badge/Website-roguebyte.online-059669)](https://roguebyte.online/)
+[![GitHub](https://img.shields.io/badge/GitHub-RogueByteOfficial-181717?logo=github)](https://github.com/RogueByteOfficial)
 [![Support](https://img.shields.io/badge/Ko--fi-Support%20RogueByte-FF5E5B)](https://ko-fi.com/roguebyte)
 
 RogueByte POS & ERP is a complete, production-grade enterprise business management system combining high-speed retail Point of Sale (POS), immutable perpetual inventory ledger, multi-branch and multi-warehouse control, goods receipts, and a strict double-entry financial accounting engine.
 
 ---
 
-## 👨‍💻 Developer & Team Information
+## 📜 Project Attribution & Provenance
 
-- **Lead Architect & Developer**: Fares sidahmed ([@RogueByteOfficial](https://github.com/RogueByteOfficial))
+- **Original Project**: POS ERP
+- **Original Developer**: Fares Sid Ahmed (Sido)
+- **Brand**: RogueByte
+- **Official Website**: [https://roguebyte.online/](https://roguebyte.online/)
+- **GitHub Organization**: [https://github.com/RogueByteOfficial](https://github.com/RogueByteOfficial)
+- **Original Repository URL**: [https://github.com/RogueByteOfficial/RogueByte-POS-ERP](https://github.com/RogueByteOfficial/RogueByte-POS-ERP)
 - **Marketing Director**: Mouahdi Adel
-- **Official Website**: [https://roguebyte.online](https://roguebyte.online)
-- **Support & Donations**: [https://ko-fi.com/roguebyte](https://ko-fi.com/roguebyte)
 
 ### 📬 Direct Communications & Inquiries
 - **General Contact**: [contact@roguebyte.online](mailto:contact@roguebyte.online)
 - **Support & Help / استفسارات**: [help@roguebyte.online](mailto:help@roguebyte.online)
 - **Business & Partnerships**: [business@roguebyte.online](mailto:business@roguebyte.online)
+- **Donations & Support**: [https://ko-fi.com/roguebyte](https://ko-fi.com/roguebyte)
 
 ---
 
@@ -111,8 +117,8 @@ RogueByte POS & ERP is a complete, production-grade enterprise business manageme
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/your-org/roguebyte-pos-erp.git
-cd roguebyte-pos-erp
+git clone https://github.com/RogueByteOfficial/RogueByte-POS-ERP.git
+cd RogueByte-POS-ERP
 npm install
 ```
 
@@ -168,3 +174,15 @@ Click the **"System Verification"** button in the top navigation bar.
 - **Idempotency Keys**: Network retries and double clicks on checkout do not duplicate transactions.
 - **Sanitized Exports**: CSV and JSON backup outputs escape special characters.
 - **Audit Trail**: High-risk actions (logins, price overrides, stock adjustments, shift reconciliations, refunds) are written to an immutable Audit Log.
+
+---
+
+## 6. Software License & Attribution
+
+This project is licensed under the **MIT License**.
+
+- Full license text and copyright terms: [`LICENSE`](LICENSE)
+- Original project provenance and author attribution documentation: [`NOTICE`](NOTICE)
+
+Under the MIT License, the original copyright notice and permission notice must be retained in copies or substantial portions of the software. The accompanying `NOTICE` file documents the project's authorship and history for attribution purposes without adding restrictions beyond the MIT License.
+
