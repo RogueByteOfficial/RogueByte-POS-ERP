@@ -35,6 +35,141 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ lang }) => {
   const [restoreJson, setRestoreJson] = useState<string>('');
   const [restoreStatus, setRestoreStatus] = useState<string>('');
 
+  // Modals for Branches, Warehouses & Users
+  const [showAddBranchModal, setShowAddBranchModal] = useState<boolean>(false);
+  const [showAddWarehouseModal, setShowAddWarehouseModal] = useState<boolean>(false);
+  const [showUserModal, setShowUserModal] = useState<boolean>(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+
+  // Add Branch Form State
+  const [branchCode, setBranchCode] = useState('');
+  const [branchName, setBranchName] = useState('');
+  const [branchNameAr, setBranchNameAr] = useState('');
+  const [branchCity, setBranchCity] = useState('');
+  const [branchAddress, setBranchAddress] = useState('');
+  const [branchPhone, setBranchPhone] = useState('');
+  const [branchTaxNo, setBranchTaxNo] = useState('OM1100482938-');
+  const [branchPrefix, setBranchPrefix] = useState('INV-');
+
+  // Add Warehouse Form State
+  const [whBranchId, setWhBranchId] = useState(state.branches[0]?.id || '');
+  const [whCode, setWhCode] = useState('');
+  const [whName, setWhName] = useState('');
+  const [whNameAr, setWhNameAr] = useState('');
+  const [whIsDefault, setWhIsDefault] = useState(false);
+
+  // User / Employee Form State
+  const [userFullName, setUserFullName] = useState('');
+  const [userUsername, setUserUsername] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState<any>('CASHIER');
+  const [userBranches, setUserBranches] = useState<string[]>(['*']);
+  const [userPermissions, setUserPermissions] = useState<string[]>(['pos.sale', 'pos.shift']);
+
+  const allAvailablePermissions = [
+    { key: 'pos.sale', label: 'Create POS Sales & Orders' },
+    { key: 'pos.discount', label: 'Apply Cart & Item Discounts' },
+    { key: 'pos.refund', label: 'Process Returns & Refunds' },
+    { key: 'pos.hold', label: 'Hold & Resume Sales' },
+    { key: 'pos.shift', label: 'Open & Close Cash Shift' },
+    { key: 'inventory.view', label: 'View Stock Quantities & Catalog' },
+    { key: 'inventory.manage', label: 'Add & Edit Product Specifications' },
+    { key: 'inventory.transfer', label: 'Request & Approve Stock Transfers' },
+    { key: 'inventory.adjust_stock', label: 'Manual Stock Adjustments' },
+    { key: 'purchasing.create_po', label: 'Create Purchase Orders' },
+    { key: 'purchasing.receive_goods', label: 'Confirm Goods Receipts (GRN)' },
+    { key: 'accounting.view', label: 'View Financial Reports & Statements' },
+    { key: 'accounting.post', label: 'Post Manual Journal Entries' },
+    { key: 'crm.manage_customers', label: 'Manage Customers & Credit Limits' },
+    { key: 'settings.manage', label: 'Manage System Settings & Backup' },
+  ];
+
+  const handleOpenAddUser = () => {
+    setEditingUser(null);
+    setUserFullName('');
+    setUserUsername('');
+    setUserEmail('');
+    setUserRole('CASHIER');
+    setUserBranches([state.branches[0]?.id || '*']);
+    setUserPermissions(['pos.sale', 'pos.shift']);
+    setShowUserModal(true);
+  };
+
+  const handleOpenEditUser = (user: any) => {
+    setEditingUser(user);
+    setUserFullName(user.fullName);
+    setUserUsername(user.username);
+    setUserEmail(user.email);
+    setUserRole(user.role);
+    setUserBranches([...user.branchIds]);
+    setUserPermissions([...user.permissions]);
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userFullName || !userUsername) return;
+
+    const userObj = {
+      id: editingUser ? editingUser.id : `USR-${Date.now().toString().slice(-4)}`,
+      username: userUsername,
+      fullName: userFullName,
+      email: userEmail || `${userUsername}@roguebyte.om`,
+      role: userRole,
+      branchIds: userBranches.length === 0 ? ['*'] : userBranches,
+      permissions: userRole === 'SUPER_ADMIN' ? ['*'] : userPermissions,
+      active: true,
+    };
+
+    db.upsertUser(userObj);
+    setShowUserModal(false);
+    setSaveSuccessNotice(editingUser ? `Updated permissions for ${userFullName}` : `Created employee ${userFullName}`);
+    setTimeout(() => setSaveSuccessNotice(''), 3000);
+  };
+
+  const handleSaveBranch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!branchCode || !branchName) return;
+
+    db.addBranch({
+      code: branchCode,
+      name: branchName,
+      nameAr: branchNameAr || branchName,
+      city: branchCity || 'Oman',
+      address: branchAddress,
+      phone: branchPhone,
+      taxRegistrationNumber: branchTaxNo,
+      invoicePrefix: branchPrefix.endsWith('-') ? branchPrefix : `${branchPrefix}-`,
+    });
+
+    setShowAddBranchModal(false);
+    setBranchCode('');
+    setBranchName('');
+    setBranchNameAr('');
+    setSaveSuccessNotice(`Branch ${branchName} and default warehouse registered successfully!`);
+    setTimeout(() => setSaveSuccessNotice(''), 3000);
+  };
+
+  const handleSaveWarehouse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!whCode || !whName) return;
+
+    db.addWarehouse({
+      branchId: whBranchId,
+      code: whCode,
+      name: whName,
+      nameAr: whNameAr || whName,
+      isDefault: whIsDefault,
+    });
+
+    setShowAddWarehouseModal(false);
+    setWhCode('');
+    setWhName('');
+    setWhNameAr('');
+    setSaveSuccessNotice(`Warehouse ${whName} created successfully!`);
+    setTimeout(() => setSaveSuccessNotice(''), 3000);
+  };
+
   const handleSaveBranding = (e: React.FormEvent) => {
     e.preventDefault();
     db.updateInvoiceSettings(invoiceSettings);
@@ -301,8 +436,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ lang }) => {
       {activeTab === 'branches' && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 font-bold text-sm">
-              Configured Branches ({state.branches.length})
+            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                  Configured Branches ({state.branches.length})
+                </h3>
+                <p className="text-[11px] text-neutral-500">Each branch maintains isolated POS registers, users, and warehouses.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddBranchModal(true)}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
+              >
+                + Add New Branch
+              </button>
             </div>
             <div className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs">
               {state.branches.map((b) => (
@@ -323,8 +470,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ lang }) => {
           </div>
 
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 font-bold text-sm">
-              Configured Warehouses ({state.warehouses.length})
+            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                  Configured Warehouses ({state.warehouses.length})
+                </h3>
+                <p className="text-[11px] text-neutral-500">Depots and retail floor locations assigned to branches.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddWarehouseModal(true)}
+                className="px-3 py-1.5 bg-neutral-800 dark:bg-neutral-700 hover:bg-neutral-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
+              >
+                + Add Warehouse
+              </button>
             </div>
             <div className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs">
               {state.warehouses.map((w) => {
@@ -352,26 +511,66 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ lang }) => {
       {/* TAB 3: USERS & RBAC */}
       {activeTab === 'rbac' && (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 font-bold text-sm">
-            System Users &amp; Role-Based Access Control (RBAC)
+          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                System Users &amp; Role-Based Access Control (RBAC)
+              </h3>
+              <p className="text-[11px] text-neutral-500">Configure employee roles, branch data isolation, and granular module permissions.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleOpenAddUser}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
+            >
+              + Add User / Employee
+            </button>
           </div>
           <div className="divide-y divide-neutral-200 dark:divide-neutral-800 text-xs">
             {state.users.map((u) => (
-              <div key={u.id} className="p-4 flex items-center justify-between">
+              <div key={u.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">{u.fullName}</div>
-                  <div className="text-neutral-500">{u.email} · Username: @{u.username}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm">{u.fullName}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                      {u.role.replace('_', ' ')}
+                    </span>
+                    {state.currentUser.id === u.id && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold">
+                        Current Session
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-neutral-500 mt-0.5">{u.email} · Username: @{u.username}</div>
                   <div className="text-[11px] text-neutral-400 mt-1 font-mono">
                     Assigned Branches: {u.branchIds.includes('*') ? 'All Branches (Consolidated)' : u.branchIds.join(', ')}
                   </div>
-                  <div className="text-[10px] text-neutral-400 mt-0.5">
-                    Permissions: {u.permissions.join(', ')}
+                  <div className="text-[10px] text-neutral-500 mt-1 max-w-xl">
+                    <span className="font-semibold text-neutral-600 dark:text-neutral-300">Permissions: </span>
+                    {u.permissions.join(' · ')}
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="px-2.5 py-1 rounded text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
-                    {u.role.replace('_', ' ')}
-                  </span>
+                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditUser(u)}
+                    className="px-2.5 py-1 text-xs font-medium bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded transition-colors"
+                  >
+                    Edit Permissions
+                  </button>
+                  {state.currentUser.id !== u.id && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete user ${u.fullName}?`)) {
+                          db.deleteUser(u.id);
+                        }
+                      }}
+                      className="px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -577,6 +776,382 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ lang }) => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MODAL: ADD BRANCH */}
+      {showAddBranchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs">
+          <form onSubmit={handleSaveBranch} className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-800 max-w-lg w-full p-6 space-y-4 text-xs">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              Add New Branch (إضافة فرع جديد)
+            </h3>
+            <p className="text-[11px] text-neutral-500">
+              Creating a branch automatically creates its main central storage warehouse and initial POS cashier terminal.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Branch Code (e.g. SLL-04) *</label>
+                <input
+                  required
+                  type="text"
+                  value={branchCode}
+                  onChange={(e) => setBranchCode(e.target.value)}
+                  placeholder="e.g. SLL-04"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">City / Region *</label>
+                <input
+                  required
+                  type="text"
+                  value={branchCity}
+                  onChange={(e) => setBranchCity(e.target.value)}
+                  placeholder="e.g. Nizwa, Dhofar, Muscat"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Branch Name (English) *</label>
+                <input
+                  required
+                  type="text"
+                  value={branchName}
+                  onChange={(e) => setBranchName(e.target.value)}
+                  placeholder="e.g. Nizwa Heritage Mall Branch"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Branch Name (Arabic)</label>
+                <input
+                  type="text"
+                  value={branchNameAr}
+                  onChange={(e) => setBranchNameAr(e.target.value)}
+                  placeholder="e.g. فرع نزوى التراثي"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-arabic"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Branch Tax TRN</label>
+                <input
+                  type="text"
+                  value={branchTaxNo}
+                  onChange={(e) => setBranchTaxNo(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Invoice Prefix (e.g. NZW-INV-) *</label>
+                <input
+                  required
+                  type="text"
+                  value={branchPrefix}
+                  onChange={(e) => setBranchPrefix(e.target.value)}
+                  placeholder="NZW-INV-"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Phone Contact</label>
+                <input
+                  type="text"
+                  value={branchPhone}
+                  onChange={(e) => setBranchPhone(e.target.value)}
+                  placeholder="+968 2541 ..."
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Full Physical Address</label>
+                <input
+                  type="text"
+                  value={branchAddress}
+                  onChange={(e) => setBranchAddress(e.target.value)}
+                  placeholder="Street / Mall Location"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddBranchModal(false)}
+                className="px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-xs"
+              >
+                Register Branch
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL: ADD WAREHOUSE */}
+      {showAddWarehouseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs">
+          <form onSubmit={handleSaveWarehouse} className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-800 max-w-md w-full p-6 space-y-4 text-xs">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              Add Warehouse / Depot (إضافة مستودع)
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Assigned Branch *</label>
+                <select
+                  value={whBranchId}
+                  onChange={(e) => setWhBranchId(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                >
+                  {state.branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Warehouse Code *</label>
+                <input
+                  required
+                  type="text"
+                  value={whCode}
+                  onChange={(e) => setWhCode(e.target.value)}
+                  placeholder="e.g. MCT-SEC-02"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Warehouse Name (English) *</label>
+                <input
+                  required
+                  type="text"
+                  value={whName}
+                  onChange={(e) => setWhName(e.target.value)}
+                  placeholder="e.g. Secondary Overflow Depot"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Warehouse Name (Arabic)</label>
+                <input
+                  type="text"
+                  value={whNameAr}
+                  onChange={(e) => setWhNameAr(e.target.value)}
+                  placeholder="e.g. مستودع التخزين الإضافي"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-arabic"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddWarehouseModal(false)}
+                className="px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-xs"
+              >
+                Save Warehouse
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL: USER & RBAC PERMISSIONS */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-xs">
+          <form onSubmit={handleSaveUser} className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-800 max-w-xl w-full p-6 space-y-4 text-xs max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              {editingUser ? `Edit Employee Permissions: ${editingUser.fullName}` : 'Add New Employee & Role (إضافة وتعديل صلاحيات الموظف)'}
+            </h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Full Name *</label>
+                <input
+                  required
+                  type="text"
+                  value={userFullName}
+                  onChange={(e) => setUserFullName(e.target.value)}
+                  placeholder="e.g. Nasser Al-Kharusi"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Username *</label>
+                <input
+                  required
+                  type="text"
+                  value={userUsername}
+                  onChange={(e) => setUserUsername(e.target.value)}
+                  placeholder="e.g. nasser.pos"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  placeholder="employee@roguebyte.om"
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 mb-1">Role Type (الدور الوظيفي) *</label>
+                <select
+                  value={userRole}
+                  onChange={(e) => {
+                    const r = e.target.value;
+                    setUserRole(r);
+                    if (r === 'SUPER_ADMIN') {
+                      setUserPermissions(['*']);
+                      setUserBranches(['*']);
+                    } else if (r === 'BRANCH_MANAGER') {
+                      setUserPermissions(['pos.sale', 'pos.discount', 'pos.refund', 'pos.hold', 'pos.shift', 'inventory.view', 'inventory.transfer', 'purchasing.create_po', 'crm.manage_customers']);
+                    } else if (r === 'ACCOUNTANT') {
+                      setUserPermissions(['accounting.view', 'accounting.post', 'reports.view']);
+                    } else if (r === 'CASHIER') {
+                      setUserPermissions(['pos.sale', 'pos.hold', 'pos.shift']);
+                    }
+                  }}
+                  className="w-full px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-semibold"
+                >
+                  <option value="SUPER_ADMIN">Super Administrator (All Access)</option>
+                  <option value="COMPANY_OWNER">Company Owner</option>
+                  <option value="BRANCH_MANAGER">Branch Manager</option>
+                  <option value="ACCOUNTANT">Chief Accountant</option>
+                  <option value="CASHIER">Cashier (Point of Sale)</option>
+                  <option value="INVENTORY_MANAGER">Inventory Manager</option>
+                  <option value="AUDITOR">Auditor &amp; Compliance</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Branch Assignment */}
+            <div>
+              <label className="block font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+                Branch Data Isolation (الفروع المصرح بها)
+              </label>
+              <div className="space-y-1.5 p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-neutral-50 dark:bg-neutral-800/50">
+                <label className="flex items-center gap-2 cursor-pointer font-medium">
+                  <input
+                    type="checkbox"
+                    checked={userBranches.includes('*')}
+                    onChange={(e) => {
+                      if (e.target.checked) setUserBranches(['*']);
+                      else setUserBranches([state.branches[0].id]);
+                    }}
+                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>All Branches (Consolidated Head Office Access)</span>
+                </label>
+
+                {!userBranches.includes('*') && (
+                  <div className="pt-2 pl-4 space-y-1 border-t border-neutral-200 dark:border-neutral-700">
+                    {state.branches.map((b) => (
+                      <label key={b.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={userBranches.includes(b.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setUserBranches([...userBranches, b.id]);
+                            } else {
+                              setUserBranches(userBranches.filter((id) => id !== b.id));
+                            }
+                          }}
+                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span>{b.name} ({b.code})</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Granular Permissions */}
+            <div>
+              <label className="block font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+                Granular Module Permissions (الصلاحيات الدقيقة)
+              </label>
+              {userRole === 'SUPER_ADMIN' ? (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-300">
+                  Super Administrator role inherently holds wildcard (<code className="font-mono font-bold">*</code>) full access across every system module.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 max-h-48 overflow-y-auto">
+                  {allAvailablePermissions.map((perm) => {
+                    const isChecked = userPermissions.includes('*') || userPermissions.includes(perm.key);
+                    return (
+                      <label key={perm.key} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setUserPermissions([...userPermissions.filter((p) => p !== '*'), perm.key]);
+                            } else {
+                              setUserPermissions(userPermissions.filter((p) => p !== perm.key && p !== '*'));
+                            }
+                          }}
+                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="text-[11px]">{perm.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowUserModal(false)}
+                className="px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-xs"
+              >
+                Save Employee &amp; Permissions
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -1540,6 +1540,88 @@ class DatabaseManager {
   }
 
   /**
+   * Branch & Warehouse Management
+   */
+  public addBranch(data: { code: string; name: string; nameAr: string; city: string; address: string; phone: string; taxRegistrationNumber: string; invoicePrefix: string }): Branch {
+    const id = `BR-${data.code.toUpperCase().replace(/\s+/g, '-')}-${Date.now().toString().slice(-4)}`;
+    const branch: Branch = {
+      id,
+      companyId: this.state.company.id,
+      ...data,
+      active: true,
+    };
+    this.state.branches.push(branch);
+
+    // Auto-create default warehouse for this new branch
+    const whId = `WH-${data.code.toUpperCase()}-MAIN`;
+    this.state.warehouses.push({
+      id: whId,
+      branchId: id,
+      code: `${data.code}-WH1`,
+      name: `${data.name} Central Storage`,
+      nameAr: `مستودع ${data.nameAr} الرئيسي`,
+      isDefault: true,
+      active: true,
+    });
+
+    // Auto-create initial POS register
+    this.state.registers.push({
+      id: `REG-${data.code.toUpperCase()}-01`,
+      branchId: id,
+      code: `POS-${data.code}-01`,
+      name: `${data.name} POS Terminal 1`,
+      active: true,
+    });
+
+    this.logAudit(this.state.currentUser.id, this.state.currentUser.fullName, 'BRANCH_CREATED', 'SETTINGS', `Added branch ${branch.name} (${branch.code})`);
+    this.saveAndNotify();
+    return branch;
+  }
+
+  public addWarehouse(data: { branchId: string; code: string; name: string; nameAr: string; isDefault: boolean }): Warehouse {
+    const id = `WH-${Date.now()}`;
+    const wh: Warehouse = {
+      id,
+      ...data,
+      active: true,
+    };
+    this.state.warehouses.push(wh);
+    this.logAudit(this.state.currentUser.id, this.state.currentUser.fullName, 'WAREHOUSE_CREATED', 'SETTINGS', `Added warehouse ${wh.name} for branch ${wh.branchId}`);
+    this.saveAndNotify();
+    return wh;
+  }
+
+  /**
+   * User & Granular RBAC Permissions Management
+   */
+  public upsertUser(user: User): { success: boolean } {
+    const idx = this.state.users.findIndex((u) => u.id === user.id);
+    if (idx >= 0) {
+      this.state.users[idx] = { ...user };
+      this.logAudit(this.state.currentUser.id, this.state.currentUser.fullName, 'USER_UPDATED', 'RBAC', `Updated user ${user.fullName} (${user.role}) and permissions`);
+    } else {
+      this.state.users.push({ ...user });
+      this.logAudit(this.state.currentUser.id, this.state.currentUser.fullName, 'USER_CREATED', 'RBAC', `Created user ${user.fullName} (${user.role})`);
+    }
+    this.saveAndNotify();
+    return { success: true };
+  }
+
+  public deleteUser(userId: string): { success: boolean; error?: string } {
+    if (userId === this.state.currentUser.id) {
+      return { success: false, error: 'Cannot delete the currently logged in active user session!' };
+    }
+    const idx = this.state.users.findIndex((u) => u.id === userId);
+    if (idx >= 0) {
+      const removed = this.state.users.splice(idx, 1)[0];
+      this.logAudit(this.state.currentUser.id, this.state.currentUser.fullName, 'USER_DELETED', 'RBAC', `Deleted user account ${removed.fullName}`);
+      this.saveAndNotify();
+      return { success: true };
+    }
+    return { success: false, error: 'User not found' };
+  }
+
+  /**
    * System Reset to Factory / Clean Seed
    */
   public resetToDefault() {
