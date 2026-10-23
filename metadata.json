@@ -1,0 +1,6 @@
+{
+  "name": "RogueByte POS & ERP",
+  "description": "Complete Multi-Branch Point of Sale, Double-Entry Accounting, Inventory Ledger, and Enterprise Business Management System with Oman OMR and international support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
